@@ -1,0 +1,339 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgb(18 20 23 / 45%);
+  backdrop-filter: blur(3px);
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 566px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 64px;
+  border-radius: 30px;
+  outline: none;
+  background: #fff;
+  color: var(--text);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+
+.modal-close:hover {
+  background: var(--accent-soft);
+}
+
+.modal-title {
+  margin: 0 0 20px;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+}
+
+.modal-description {
+  margin: 0;
+  color: rgb(18 20 23 / 80%);
+  font-size: 16px;
+  line-height: 1.375;
+}
+
+.auth-form {
+  margin-top: 40px;
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-field input {
+  display: block;
+  width: 100%;
+  height: 54px;
+  padding: 15px 18px;
+  border: 1px solid rgb(18 20 23 / 10%);
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.375;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.form-field input::placeholder {
+  color: var(--text);
+  opacity: 1;
+}
+
+.form-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.form-field input[aria-invalid='true'] {
+  border-color: #b23b3b;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 54px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  background: var(--accent-soft);
+}
+
+.field-error,
+.form-error {
+  margin: 7px 0 0;
+  color: #b23b3b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.form-error {
+  margin-top: 18px;
+}
+
+.modal-submit {
+  width: 100%;
+  min-height: 60px;
+  margin-top: 40px;
+}
+
+.modal-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.preview-note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.booking-modal {
+  max-width: 600px;
+}
+
+.booking-teacher {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.booking-teacher img {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.booking-teacher span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.333;
+}
+
+.booking-teacher p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.booking-reasons {
+  min-width: 0;
+  margin: 40px 0;
+  padding: 0;
+  border: 0;
+}
+
+.booking-reasons legend {
+  margin-bottom: 20px;
+  padding: 0;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.333;
+  letter-spacing: -0.48px;
+}
+
+.reason-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 1.375;
+  cursor: pointer;
+}
+
+.reason-option input {
+  display: grid;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  place-content: center;
+  border: 2px solid rgb(18 20 23 / 20%);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.reason-option input::before {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  content: '';
+  transform: scale(0);
+}
+
+.reason-option input:checked {
+  border-color: var(--accent);
+}
+
+.reason-option input:checked::before {
+  transform: scale(1);
+}
+
+.reason-option input:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.confirmation-symbol {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
+
+.request-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.request-summary span {
+  font-size: 13px;
+}
+
+.request-summary strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.confirmation-note {
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 32px);
+    padding: 48px 24px 32px;
+    border-radius: 24px;
+  }
+
+  .modal-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .modal-title {
+    margin-bottom: 16px;
+    font-size: 32px;
+    letter-spacing: -0.64px;
+  }
+
+  .auth-form {
+    margin-top: 28px;
+  }
+
+  .modal-submit {
+    min-height: 54px;
+    margin-top: 28px;
+  }
+
+  .booking-reasons {
+    margin: 28px 0;
+  }
+
+  .booking-reasons legend {
+    font-size: 22px;
+  }
+}
