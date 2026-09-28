@@ -1,40 +1,42 @@
 # LearnLingo
 
-Dil öğrenmek isteyen kullanıcıların öğretmenleri inceleyebildiği, dil, seviye ve saatlik ücret üzerinden filtreleyebildiği React uygulaması.
+**English** | [Türkçe](README.tr.md)
 
-## Mevcut durum
+A React application that helps language learners explore teachers and filter them by language, proficiency level, and hourly rate.
 
-Proje şu anda frontend önizleme aşamasındadır. Giriş ve kayıt formları yalnızca tarayıcıda bir önizleme profili oluşturur; gerçek kimlik doğrulama yapılmaz ve şifreler saklanmaz. Deneme dersi formu gönderilmez, doldurulan talebin bir özetini gösterir.
+## Current status
 
-Öğretmenler, sağlanan özgün veri dosyasının `public/data/teachers.json` kopyasından okunur. İlk yüklemede dört kart gösterilir. Her `Load more` işleminde dosyaya yeni bir HTTP isteği yapılır; filtreleme ve sayfalama tarayıcıda gerçekleştirilir. Firebase henüz bağlı değildir.
+The project is currently a frontend preview. Login and registration forms create a preview profile in the browser; they do not perform real authentication, and passwords are not stored. The trial lesson form displays a summary of the completed request without sending a booking.
 
-## Özellikler
+Teachers are loaded from `public/data/teachers.json`, a copy of the supplied original dataset. Four cards appear initially. Each `Load more` action makes a new HTTP request for the file; filtering and pagination run in the browser. Firebase is not connected yet.
 
-- Home, Teachers ve önizleme oturumu gerektiren Favorites sayfaları.
-- Dil, öğrenci seviyesi ve en yüksek saatlik ücret filtreleri.
-- Genişletilebilir öğretmen kartları, deneyim açıklamaları ve öğrenci yorumları.
-- Önizleme profiline göre `localStorage` içinde saklanan favoriler.
-- Zorunlu alan doğrulaması, şifre gösterme kontrolü ve deneme dersi formu.
-- Çarpı, arka plan tıklaması ve Escape ile kapanan, klavye odağını yöneten modallar.
-- Mobil, tablet ve masaüstüne uyarlanan arayüz.
-- Her açılışta veya yenilemede sarı, yeşil, mavi, pembe ve şeftali sırasıyla değişen tema. Sayfa geçişlerinde mevcut tema korunur.
-- Temayla eşleşen İspanya, İtalya, Ukrayna, Birleşik Krallık ve Almanya bayraklı logolar.
-- Ana sayfa görsellerinde `srcset` ile normal ekran için `1x`, retina ekran için `2x` dosya seçimi.
+## Features
 
-## Teknolojiler
+- Home, Teachers, and Favorites pages; Favorites requires a preview session.
+- Filters for language, learner proficiency level, and maximum hourly rate.
+- Expandable teacher cards with experience details and student reviews.
+- Favorites saved in `localStorage` for each preview profile.
+- Required field validation, password visibility controls, and a trial lesson form.
+- Modals with keyboard focus management that close using the close button, backdrop, or Escape key.
+- Responsive layouts for mobile, tablet, and desktop screens.
+- A theme that cycles through yellow, green, blue, pink, and peach on each visit or reload, while staying consistent during navigation.
+- Matching logos featuring the flags of Spain, Italy, Ukraine, the United Kingdom, and Germany.
+- Homepage images using `srcset` to select `1x` files for standard displays and `2x` files for retina displays.
 
-React, Vite, React Router, React Hook Form, Yup ve CSS. Kod kontrolü için ESLint ve Prettier, tarayıcı kontrolleri için Playwright kullanılır.
+## Technologies
 
-## Yerel kurulum
+React, Vite, React Router, React Hook Form, Yup, and CSS. ESLint and Prettier handle code quality and formatting; Playwright provides browser tests.
 
-Güncel Node.js LTS ve npm gereklidir.
+## Local setup
+
+A current Node.js LTS release and npm are required.
 
 ```sh
 npm install
 npm run dev
 ```
 
-Terminalde gösterilen yerel adresi tarayıcıda açın. Frontend önizlemesi için Firebase anahtarı veya ortam değişkeni gerekmez.
+Open the local address shown in the terminal. The frontend preview does not require Firebase configuration or environment variables.
 
 ```sh
 npm run build
@@ -43,19 +45,21 @@ npm run lint
 npm run format:check
 ```
 
-Tarayıcı testleri için:
+To run browser tests:
 
 ```sh
 npx playwright install chromium
 npm test
 ```
 
-## Tasarım ve teknik kapsam
+## Design and technical scope
 
-Arayüz, [LearnLingo Figma tasarımına](https://www.figma.com/file/dewf5jVviSTuWMMyU3d8Mc/?node-id=0-1) dayanır. Teknik kapsam; üç sayfa, Firebase Authentication ile kayıt ve oturum yönetimi, Realtime Database üzerinden öğretmen koleksiyonu ve dörder kart yükleme, kalıcı favoriler, öğretmen filtreleri ve doğrulanan modal formlarını içerir.
+The interface is based on the [LearnLingo Figma design](https://www.figma.com/file/dewf5jVviSTuWMMyU3d8Mc/?node-id=0-1). The technical specification covers three pages, registration and session management with Firebase Authentication, a teacher collection in Realtime Database loaded four cards at a time, persistent favorites, teacher filters, and validated modal forms.
 
-## Sonraki aşama
+## Next steps
 
-Firebase Authentication bağlantısı, öğretmen verilerinin Realtime Database'e aktarılması, veritabanından sayfalı veri sorgulama ve gerekli güvenlik kuralları tamamlanacaktır. Rezervasyon formunun gerçek gönderim davranışı ayrıca bağlanacaktır. Sonrasında üretim yapılandırması ve barındırma ortamında yayınlama yapılacaktır.
+The next phase includes connecting Firebase Authentication, importing teachers into Realtime Database, implementing database pagination, and configuring security rules. Production configuration and deployment will follow.
 
-Üretim çıktısı `dist` dizinine yazılır. React Router için barındırma servisinin sayfa isteklerini `index.html` dosyasına yönlendirmesi gerekir. Netlify için yönlendirme dosyası projede bulunmaktadır; proje henüz yayına alınmış olarak sunulmamaktadır.
+Storing bookings in the database or sending emails is not required by the current technical specification; these are optional additional features.
+
+The production build is written to `dist`. The hosting service must route page requests to `index.html` for React Router. A Netlify redirects file is included; the project has not been deployed yet.
