@@ -355,7 +355,7 @@ test('keyboard focus stays inside the modal in both directions', async ({
   await capture(page, testInfo, 'login-desktop.png');
 });
 
-test('themes cycle on reload while route changes preserve the current theme', async ({
+test('themes cycle on reload, menu navigation preserves them, and the logo reloads home', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -365,7 +365,7 @@ test('themes cycle on reload while route changes preserve the current theme', as
   await page.getByRole('link', { name: 'Get started', exact: true }).click();
   await expect(page).toHaveURL('/teachers');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow');
-  await page.getByRole('link', { name: 'LearnLingo home' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow');
   for (const theme of ['green', 'blue', 'pink', 'peach', 'yellow']) {
     await page.reload();
@@ -379,6 +379,25 @@ test('themes cycle on reload while route changes preserve the current theme', as
       }),
     ).toHaveAttribute('src', `/images/hero-${theme}.png`);
     await capture(page, testInfo, `home-${theme}-desktop.png`);
+  }
+
+  await page.getByRole('link', { name: 'Teachers', exact: true }).click();
+  await expect(page).toHaveURL('/teachers');
+
+  for (const theme of ['green', 'blue']) {
+    const documentRequest = page.waitForRequest(
+      (request) =>
+        request.isNavigationRequest() &&
+        request.resourceType() === 'document' &&
+        new URL(request.url()).pathname === '/',
+    );
+    await page.getByRole('link', { name: 'LearnLingo home' }).click();
+    await documentRequest;
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Unlock your potential',
+    );
   }
 });
 

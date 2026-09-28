@@ -19,7 +19,7 @@ Teachers are loaded from `public/data/teachers.json`, a copy of the supplied ori
 - Required field validation, password visibility controls, and a trial lesson form.
 - Modals with keyboard focus management that close using the close button, backdrop, or Escape key.
 - Responsive layouts for mobile, tablet, and desktop screens.
-- A theme that cycles through yellow, green, blue, pink, and peach on each visit or reload, while staying consistent during navigation.
+- A theme that cycles through yellow, green, blue, pink, and peach on each visit or reload. Regular navigation preserves the theme; clicking the LearnLingo logo reloads the home page and advances to the next theme.
 - Matching logos featuring the flags of Spain, Italy, Ukraine, the United Kingdom, and Germany.
 - Homepage images using `srcset` to select `1x` files for standard displays and `2x` files for retina displays.
 

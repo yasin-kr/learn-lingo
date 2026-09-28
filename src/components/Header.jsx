@@ -16,10 +16,31 @@ export default function Header() {
       <div className="header-container">
         <Link
           to="/"
+          reloadDocument
           className="brand"
           onClick={closeMenu}
           aria-label="LearnLingo home"
         >
+          <svg
+            className="brand-light"
+            width="106"
+            height="40"
+            viewBox="0 0 106 40"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            {['tail', 'trail', 'beam', 'glow', 'tip'].map((part) => (
+              <path
+                key={part}
+                className={`brand-light-${part}`}
+                d="M7 28C2 18 29 7 58 7C86 7 102 12 99 19C95 28 64 34 37 33C19 33 9 32 7 28Z"
+                pathLength="1000"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
           <img
             src={`/images/logo-${theme.id}.svg`}
             alt="LearnLingo"

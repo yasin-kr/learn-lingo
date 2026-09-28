@@ -19,7 +19,7 @@ Proje şu anda frontend önizleme aşamasındadır. Giriş ve kayıt formları y
 - Zorunlu alan doğrulaması, şifre gösterme kontrolü ve deneme dersi formu.
 - Çarpı, arka plan tıklaması ve Escape ile kapanan, klavye odağını yöneten modallar.
 - Mobil, tablet ve masaüstüne uyarlanan arayüz.
-- Her açılışta veya yenilemede sarı, yeşil, mavi, pembe ve şeftali sırasıyla değişen tema. Sayfa geçişlerinde mevcut tema korunur.
+- Her açılışta veya yenilemede sarı, yeşil, mavi, pembe ve şeftali sırasıyla değişen tema. Normal sayfa geçişlerinde mevcut tema korunur; LearnLingo logosuna tıklamak ana sayfayı yeniden yükler ve sıradaki temaya geçirir.
 - Temayla eşleşen İspanya, İtalya, Ukrayna, Birleşik Krallık ve Almanya bayraklı logolar.
 - Ana sayfa görsellerinde `srcset` ile normal ekran için `1x`, retina ekran için `2x` dosya seçimi.
 
