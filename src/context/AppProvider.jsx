@@ -1,15 +1,38 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updateProfile,
+} from 'firebase/auth';
 import { AppContext } from './AppContext';
+import { auth, firebaseConfigurationError } from '../lib/firebase';
 import { readStorage, writeStorage } from '../lib/storage';
+import {
+  authenticationUnavailableMessage,
+  getAuthErrorMessage,
+} from '../services/auth';
 
-function loadUser() {
-  const stored = readStorage('learnlingo:preview-user');
-  return stored &&
-    typeof stored.id === 'string' &&
-    typeof stored.name === 'string' &&
-    typeof stored.email === 'string'
-    ? stored
-    : null;
+function toUserProfile(firebaseUser) {
+  if (!firebaseUser) return null;
+  return {
+    id: firebaseUser.uid,
+    name:
+      firebaseUser.displayName ||
+      firebaseUser.email?.split('@')[0] ||
+      'Learner',
+    email: firebaseUser.email || '',
+  };
+}
+
+function requireAuthentication() {
+  if (!auth || firebaseConfigurationError) {
+    throw Object.assign(new Error(authenticationUnavailableMessage), {
+      code: 'auth/configuration-missing',
+    });
+  }
+  return auth;
 }
 
 function loadFavorites(user) {
@@ -21,12 +44,35 @@ function loadFavorites(user) {
 }
 
 export default function AppProvider({ children, theme }) {
-  const [user, setUser] = useState(loadUser);
-  const [favoriteIds, setFavoriteIds] = useState(() =>
-    loadFavorites(loadUser()),
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(Boolean(auth));
+  const [authError, setAuthError] = useState(
+    auth && !firebaseConfigurationError ? '' : authenticationUnavailableMessage,
   );
+  const [signingOut, setSigningOut] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState([]);
   const [modal, setModal] = useState(null);
   const [notification, setNotification] = useState(null);
+
+  const syncUser = useCallback((firebaseUser) => {
+    const profile = toUserProfile(firebaseUser);
+    setUser(profile);
+    setFavoriteIds(loadFavorites(profile));
+    setAuthError('');
+    setAuthLoading(false);
+    return profile;
+  }, []);
+
+  useEffect(() => {
+    if (!auth) return undefined;
+
+    return onAuthStateChanged(auth, syncUser, (error) => {
+      setUser(null);
+      setFavoriteIds([]);
+      setAuthError(getAuthErrorMessage(error));
+      setAuthLoading(false);
+    });
+  }, [syncUser]);
 
   const notify = useCallback((message) => {
     setNotification({ message, id: Date.now() });
@@ -42,40 +88,73 @@ export default function AppProvider({ children, theme }) {
   );
   const closeModal = useCallback(() => setModal(null), []);
 
-  const startPreviewSession = async ({ name, email }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const profiles = readStorage('learnlingo:preview-profiles', {});
-    const safeProfiles =
-      profiles && typeof profiles === 'object' && !Array.isArray(profiles)
-        ? profiles
-        : {};
-    const profile = {
-      id: normalizedEmail,
-      email: normalizedEmail,
-      name:
-        name?.trim() ||
-        safeProfiles[normalizedEmail]?.name ||
-        normalizedEmail.split('@')[0],
-    };
-    writeStorage('learnlingo:preview-profiles', {
-      ...safeProfiles,
-      [normalizedEmail]: profile,
-    });
-    writeStorage('learnlingo:preview-user', profile);
-    setUser(profile);
-    setFavoriteIds(loadFavorites(profile));
-    notify(`Welcome, ${profile.name}. Your preview is ready.`);
+  const signIn = async ({ email, password }) => {
+    try {
+      const credential = await signInWithEmailAndPassword(
+        requireAuthentication(),
+        email.trim(),
+        password,
+      );
+      const profile = syncUser(credential.user);
+      notify(`Welcome back, ${profile.name}.`);
+      return profile;
+    } catch (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
+  const signUp = async ({ name, email, password }) => {
+    let credential;
+    try {
+      credential = await createUserWithEmailAndPassword(
+        requireAuthentication(),
+        email.trim(),
+        password,
+      );
+    } catch (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+
+    let nameSaved = true;
+    try {
+      await updateProfile(credential.user, { displayName: name.trim() });
+    } catch {
+      nameSaved = false;
+    }
+
+    const profile = toUserProfile(credential.user);
+    if (auth.currentUser?.uid !== credential.user.uid) return profile;
+    syncUser(credential.user);
+    notify(
+      nameSaved
+        ? `Welcome, ${profile.name}. Your account is ready.`
+        : 'Your account was created, but we could not save your name. You can still use your account.',
+    );
     return profile;
   };
 
-  const signOut = () => {
-    writeStorage('learnlingo:preview-user', null);
-    setUser(null);
-    setFavoriteIds([]);
-    notify('You have been logged out.');
+  const signOut = async () => {
+    if (signingOut) return false;
+    setSigningOut(true);
+    try {
+      await firebaseSignOut(requireAuthentication());
+      syncUser(null);
+      closeModal();
+      notify('You have been logged out.');
+      return true;
+    } catch (error) {
+      notify(getAuthErrorMessage(error));
+      return false;
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const toggleFavorite = (teacher) => {
+    if (authLoading || signingOut) {
+      notify('Your session is still loading. Please try again shortly.');
+      return;
+    }
     if (!user) {
       setModal({ type: 'favorite-access' });
       return;
@@ -96,6 +175,9 @@ export default function AppProvider({ children, theme }) {
     <AppContext.Provider
       value={{
         user,
+        authLoading,
+        authError,
+        signingOut,
         theme,
         favoriteIds,
         modal,
@@ -105,8 +187,8 @@ export default function AppProvider({ children, theme }) {
         openAuth,
         openBooking,
         closeModal,
-        signIn: startPreviewSession,
-        signUp: startPreviewSession,
+        signIn,
+        signUp,
         signOut,
         toggleFavorite,
       }}

@@ -18,7 +18,7 @@ export default function TeachersPage({ favoritesOnly = false }) {
   const [resolvedQuery, setResolvedQuery] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState(null);
   const requestRef = useRef(null);
   const language = searchParams.get('language') || '';
   const level = searchParams.get('level') || '';
@@ -28,7 +28,7 @@ export default function TeachersPage({ favoritesOnly = false }) {
   const loading = resolvedQuery !== queryKey;
 
   const loadTeachers = useCallback(
-    (offset = 0) => {
+    (cursor = null) => {
       requestRef.current?.abort();
       const controller = new AbortController();
       requestRef.current = controller;
@@ -37,7 +37,7 @@ export default function TeachersPage({ favoritesOnly = false }) {
         level,
         maxPrice,
         favoriteIds: favoriteKey ? JSON.parse(favoriteKey) : null,
-        offset,
+        cursor,
         limit: 4,
         signal: controller.signal,
       })
@@ -45,18 +45,20 @@ export default function TeachersPage({ favoritesOnly = false }) {
           if (controller.signal.aborted) return;
 
           setTeachers((previous) =>
-            offset === 0 ? result.teachers : [...previous, ...result.teachers],
+            cursor === null
+              ? result.teachers
+              : [...previous, ...result.teachers],
           );
           setOptions(result.options);
           setHasMore(result.hasMore);
-          setTotal(result.total);
+          setNextCursor(result.nextCursor);
           setError('');
         })
         .catch((loadError) => {
           if (!controller.signal.aborted && loadError.name !== 'AbortError') {
-            if (offset === 0) {
+            if (cursor === null) {
               setTeachers([]);
-              setTotal(0);
+              setNextCursor(null);
               setHasMore(false);
             }
             setError(
@@ -98,7 +100,7 @@ export default function TeachersPage({ favoritesOnly = false }) {
   };
   const loadMoreTeachers = () => {
     setLoadingMore(true);
-    loadTeachers(teachers.length);
+    loadTeachers(nextCursor);
   };
   const emptyFavorites = favoritesOnly && favoriteIds.length === 0;
 
@@ -126,7 +128,7 @@ export default function TeachersPage({ favoritesOnly = false }) {
         <div className="sr-only" role="status" aria-live="polite">
           {loading
             ? 'Loading teachers'
-            : `${total} ${total === 1 ? 'teacher' : 'teachers'} found. Showing ${teachers.length}.`}
+            : `Showing ${teachers.length} ${teachers.length === 1 ? 'teacher' : 'teachers'}.`}
         </div>
 
         {loading ? (

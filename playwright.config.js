@@ -21,5 +21,13 @@ export default defineConfig({
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 60000,
+    env: {
+      VITE_FIREBASE_API_KEY: 'test-only-api-key',
+      VITE_FIREBASE_AUTH_DOMAIN: 'learnlingo-test.firebaseapp.com',
+      VITE_FIREBASE_DATABASE_URL:
+        'https://learnlingo-test-default-rtdb.firebaseio.com',
+      VITE_FIREBASE_PROJECT_ID: 'learnlingo-test',
+      VITE_FIREBASE_APP_ID: '1:123456789:web:learnlingo-test',
+    },
   },
 });

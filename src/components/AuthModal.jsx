@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -32,9 +32,10 @@ export default function AuthModal({ mode = 'login', onClose }) {
   const isRegistration = mode === 'register' || mode === 'registration';
   const titleId = useId();
   const formId = useId();
+  const activeRef = useRef(true);
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const { signIn, signUp } = useApp();
+  const { signIn, signUp, authLoading, authError } = useApp();
   const {
     register,
     handleSubmit,
@@ -45,12 +46,20 @@ export default function AuthModal({ mode = 'login', onClose }) {
     mode: 'onTouched',
   });
 
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
   const onSubmit = async (values) => {
     setSubmitError('');
     try {
       await (isRegistration ? signUp(values) : signIn(values));
-      onClose();
+      if (activeRef.current) onClose();
     } catch (error) {
+      if (!activeRef.current) return;
       setSubmitError(
         error?.message || 'We could not continue. Please try again.',
       );
@@ -69,7 +78,7 @@ export default function AuthModal({ mode = 'login', onClose }) {
       </p>
       <form
         className="modal-form auth-form"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(event) => handleSubmit(onSubmit)(event)}
         noValidate
       >
         <div className="form-fields">
@@ -154,15 +163,15 @@ export default function AuthModal({ mode = 'login', onClose }) {
             )}
           </div>
         </div>
-        {submitError && (
+        {(submitError || authError) && (
           <p className="form-error" role="alert">
-            {submitError}
+            {submitError || authError}
           </p>
         )}
         <button
           type="submit"
           className="button button-primary modal-submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || authLoading || Boolean(authError)}
         >
           {isSubmitting
             ? 'Please wait…'
@@ -170,9 +179,6 @@ export default function AuthModal({ mode = 'login', onClose }) {
               ? 'Sign Up'
               : 'Log In'}
         </button>
-        <p className="preview-note">
-          Preview mode. Use sample details; no account is created.
-        </p>
       </form>
     </Modal>
   );

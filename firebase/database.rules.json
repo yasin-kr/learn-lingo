@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "teachers": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}

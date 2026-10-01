@@ -11,7 +11,14 @@ import Toast from './components/Toast';
 import Icon from './components/Icon';
 
 function FavoritesRoute() {
-  const { user, openAuth } = useApp();
+  const { user, authLoading, openAuth } = useApp();
+  if (authLoading) {
+    return (
+      <main id="main-content" className="message-page" aria-busy="true">
+        <p role="status">Loading your session…</p>
+      </main>
+    );
+  }
   if (user) return <TeachersPage favoritesOnly />;
   return (
     <main id="main-content" className="message-page">

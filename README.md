@@ -6,16 +6,18 @@ A React application that helps language learners explore teachers and filter the
 
 ## Current status
 
-The project is currently a frontend preview. Login and registration forms create a preview profile in the browser; they do not perform real authentication, and passwords are not stored. The trial lesson form displays a summary of the completed request without sending a booking.
+Firebase Authentication and Realtime Database integration are implemented. Registration, login, logout, and persistent sessions use the Firebase JavaScript SDK; an authentication observer keeps the current user in sync. The application does not store passwords. The local production build has been verified against live Firebase services. Hosted deployment and checks on the deployment domain remain to be completed.
 
-Teachers are loaded from `public/data/teachers.json`, a copy of the supplied original dataset. Four cards appear initially. Each `Load more` action makes a new HTTP request for the file; filtering and pagination run in the browser. Firebase is not connected yet.
+Teachers are loaded from Realtime Database through REST queries with key-based pagination. Four cards appear initially, and each `Load more` action makes a new database request. Combined filters are applied in the browser to bounded database batches; additional batches are requested as needed to find matching teachers. Filter options in `src/lib/teacher-options.json` match the supplied teacher dataset.
+
+The trial lesson form displays a local summary of the completed request. It does not submit a booking or send an email.
 
 ## Features
 
-- Home, Teachers, and Favorites pages; Favorites requires a preview session.
+- Home, Teachers, and Favorites pages; Favorites requires a Firebase session.
 - Filters for language, learner proficiency level, and maximum hourly rate.
 - Expandable teacher cards with experience details and student reviews.
-- Favorites saved in `localStorage` for each preview profile.
+- Favorites saved in `localStorage` under each Firebase user's UID. They persist in the same browser and do not sync across devices.
 - Required field validation, password visibility controls, and a trial lesson form.
 - Modals with keyboard focus management that close using the close button, backdrop, or Escape key.
 - Responsive layouts for mobile, tablet, and desktop screens.
@@ -25,18 +27,46 @@ Teachers are loaded from `public/data/teachers.json`, a copy of the supplied ori
 
 ## Technologies
 
-React, Vite, React Router, React Hook Form, Yup, and CSS. ESLint and Prettier handle code quality and formatting; Playwright provides browser tests.
+React, Vite, React Router, Firebase Authentication, Firebase Realtime Database, React Hook Form, Yup, and CSS. ESLint and Prettier handle code quality and formatting; Playwright provides browser tests.
 
 ## Local setup
 
 A current Node.js LTS release and npm are required.
+
+Copy `.env.example` to `.env.local` and fill in the Firebase web application configuration, including the Realtime Database URL. Keep `.env.local` out of Git. The expected variables are:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_DATABASE_URL
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+Complete the Firebase setup below, then run:
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open the local address shown in the terminal. The frontend preview does not require Firebase configuration or environment variables.
+Open the local address shown in the terminal. Restart the development server after changing environment variables.
+
+## Firebase setup
+
+1. Create a Firebase project and register a web application.
+2. Enable the Email/Password provider in Authentication. Add the local development and production hostnames to Authentication's authorized domains as needed.
+3. Create a Realtime Database and use its URL for `VITE_FIREBASE_DATABASE_URL`.
+4. Import `firebase/teachers.import.json` at the root of an empty database. It contains a `teachers` collection with 30 records keyed from `teacher-001` to `teacher-030`. Root imports replace existing data, so do not import over a populated database without preserving its contents.
+5. Publish the rules from `firebase/database.rules.json`. They allow public reads of `teachers` and deny all client writes; other database paths cannot be read by clients.
+
+Teacher data is maintained through administrative access, such as the Firebase Console. A `users` database collection is not required: Authentication manages accounts, and favorites remain in browser storage, separated by Firebase UID.
+
+Use only the Firebase web application configuration in the frontend. Never put a service account private key or other server credentials in `VITE_` variables or project files.
+
+## Checks
 
 ```sh
 npm run build
@@ -52,14 +82,20 @@ npx playwright install chromium
 npm test
 ```
 
+All 17 automated browser tests pass. They mock Firebase network responses in isolated browser contexts and do not create real accounts or modify the live database. Lint and production build checks also pass.
+
+Separate checks of the local production build against live Firebase verified registration and profile information, login, logout, session persistence after reload, user-specific favorite addition, persistence and removal, bounded database pagination, and combined filters. These checks do not replace verification on the eventual deployment domain.
+
 ## Design and technical scope
 
 The interface is based on the [LearnLingo Figma design](https://www.figma.com/file/dewf5jVviSTuWMMyU3d8Mc/?node-id=0-1). The technical specification covers three pages, registration and session management with Firebase Authentication, a teacher collection in Realtime Database loaded four cards at a time, persistent favorites, teacher filters, and validated modal forms.
 
-## Next steps
+## Deployment and next steps
 
-The next phase includes connecting Firebase Authentication, importing teachers into Realtime Database, implementing database pagination, and configuring security rules. Production configuration and deployment will follow.
+Configure the hosting environment, deploy the application, and verify the main flows on its deployment domain. No public deployment URL is available yet.
+
+For Netlify, use `npm run build` as the build command and `dist` as the publish directory. Set the same `VITE_FIREBASE_*` environment variables in the hosting settings before building, and add the deployment hostname to Firebase Authentication's authorized domains. Environment changes require a new build.
+
+The production build is written to `dist`. The hosting service must route page requests to `index.html` for React Router. A Netlify redirects file is included. After deployment, verify direct page URLs, page reloads, authentication, and teacher loading on the live site.
 
 Storing bookings in the database or sending emails is not required by the current technical specification; these are optional additional features.
-
-The production build is written to `dist`. The hosting service must route page requests to `index.html` for React Router. A Netlify redirects file is included; the project has not been deployed yet.

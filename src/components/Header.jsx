@@ -4,10 +4,13 @@ import { useApp } from '../context/AppContext';
 import Icon from './Icon';
 
 export default function Header() {
-  const { user, theme, openAuth, signOut } = useApp();
+  const { user, authLoading, signingOut, theme, openAuth, signOut } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const closeMenu = () => setMenuOpen(false);
+  const handleSignOut = async () => {
+    if (await signOut()) closeMenu();
+  };
 
   return (
     <header
@@ -75,8 +78,12 @@ export default function Header() {
               </NavLink>
             )}
           </nav>
-          <div className="header-actions">
-            {user ? (
+          <div className="header-actions" aria-busy={authLoading}>
+            {authLoading ? (
+              <span className="user-name" role="status">
+                Loading your session…
+              </span>
+            ) : user ? (
               <>
                 <span className="user-name" title={user.name}>
                   {user.name}
@@ -84,13 +91,11 @@ export default function Header() {
                 <button
                   type="button"
                   className="login-button"
-                  onClick={() => {
-                    signOut();
-                    closeMenu();
-                  }}
+                  onClick={handleSignOut}
+                  disabled={signingOut}
                 >
                   <Icon name="logout" />
-                  Log out
+                  {signingOut ? 'Logging out…' : 'Log out'}
                 </button>
               </>
             ) : (

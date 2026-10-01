@@ -1,18 +1,38 @@
 import { test, expect } from '@playwright/test';
+import {
+  mockFirebase,
+  readPersistedAuth,
+  signIn,
+  testAccounts,
+} from './helpers/firebase';
 
 const browserErrors = new WeakMap();
+const firebaseFixtures = new WeakMap();
 
 test.beforeEach(async ({ page }) => {
   const errors = [];
   browserErrors.set(page, errors);
-  page.on('pageerror', (error) => errors.push(error.message));
+  firebaseFixtures.set(page, await mockFirebase(page));
+  page.on('pageerror', (error) => errors.push({ message: error.message }));
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
+    if (message.type() === 'error')
+      errors.push({ message: message.text(), url: message.location().url });
   });
 });
 
 test.afterEach(async ({ page }) => {
-  expect(browserErrors.get(page), 'Browser console and runtime errors').toEqual(
+  const firebase = firebaseFixtures.get(page);
+  const unexpectedErrors = browserErrors
+    .get(page)
+    .filter(
+      (error) =>
+        !(
+          error.message.startsWith('Failed to load resource:') &&
+          firebase.expectedFailures.has(error.url)
+        ),
+    );
+  expect(unexpectedErrors, 'Browser console and runtime errors').toEqual([]);
+  expect(firebase.unexpectedRequests, 'Unexpected Firebase requests').toEqual(
     [],
   );
 });
@@ -85,11 +105,17 @@ test('initial four teachers expand to eight after a new data request', async ({
     .allTextContents();
   const nextResponse = page.waitForResponse(
     (response) =>
-      response.url().includes('/data/teachers.json') &&
+      new URL(response.url()).pathname === '/teachers.json' &&
+      new URL(response.url()).searchParams.has('startAt') &&
       response.request().method() === 'GET',
   );
   await page.getByRole('button', { name: 'Load more', exact: true }).click();
-  expect((await nextResponse).ok()).toBeTruthy();
+  const response = await nextResponse;
+  expect(response.ok()).toBeTruthy();
+  const query = new URL(response.url()).searchParams;
+  expect(JSON.parse(query.get('orderBy'))).toBe('$key');
+  expect(JSON.parse(query.get('startAt'))).toMatch(/^teacher-\d{3}$/);
+  expect(Number(query.get('limitToFirst'))).toBeLessThanOrEqual(6);
   await expect(page.getByRole('article')).toHaveCount(8);
   const nextNames = await page
     .getByRole('article')
@@ -121,9 +147,8 @@ test('language, level and maximum price combine and reset', async ({
   await expect(
     page.getByRole('article').getByRole('heading', { level: 2 }),
   ).toHaveText(['John Doe', 'Ethan Gonzalez', 'Ava Cooper', 'Sophie Davis']);
-  await expect(page.getByRole('status')).toContainText(
-    '5 teachers found. Showing 4.',
-  );
+  await expect(page.getByRole('status')).toContainText('Showing 4 teachers.');
+  const requestsBeforeMore = firebaseFixtures.get(page).databaseRequests.length;
   await page.getByRole('button', { name: 'Load more', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(5);
   await expect(
@@ -132,6 +157,9 @@ test('language, level and maximum price combine and reset', async ({
   await expect(
     page.getByRole('button', { name: 'Load more', exact: true }),
   ).toHaveCount(0);
+  expect(firebaseFixtures.get(page).databaseRequests.length).toBeGreaterThan(
+    requestsBeforeMore,
+  );
   await page.getByRole('button', { name: 'Reset filters' }).click();
   await expect(
     page.getByRole('combobox', { name: 'Languages', exact: true }),
@@ -143,9 +171,35 @@ test('language, level and maximum price combine and reset', async ({
     page.getByRole('combobox', { name: 'Price / hour' }),
   ).toHaveValue('');
   await expect(page.getByRole('article')).toHaveCount(4);
-  await expect(page.getByRole('status')).toContainText(
-    '30 teachers found. Showing 4.',
+  await expect(page.getByRole('status')).toContainText('Showing 4 teachers.');
+});
+
+test('a failed next page preserves teachers and retries without duplicates', async ({
+  page,
+}) => {
+  await openTeachers(page);
+  const firstNames = await page
+    .getByRole('article')
+    .getByRole('heading', { level: 2 })
+    .allTextContents();
+  firebaseFixtures.get(page).failNextDatabaseRequest();
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'We could not load the teachers.',
   );
+  await expect(page.getByRole('article')).toHaveCount(4);
+  await expect(
+    page.getByRole('article').getByRole('heading', { level: 2 }),
+  ).toHaveText(firstNames);
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(8);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  const allNames = await page
+    .getByRole('article')
+    .getByRole('heading', { level: 2 })
+    .allTextContents();
+  expect(allNames.slice(0, 4)).toEqual(firstNames);
+  expect(new Set(allNames).size).toBe(8);
 });
 
 test('favorites require a session and remain saved after refresh', async ({
@@ -159,11 +213,7 @@ test('favorites require a session and remain saved after refresh', async ({
   await expect(accessDialog).toBeVisible();
   await accessDialog.getByRole('button', { name: 'Create an account' }).click();
   const registration = page.getByRole('dialog', { name: 'Registration' });
-  await expect(
-    registration.getByText(
-      'Preview mode. Use sample details; no account is created.',
-    ),
-  ).toBeVisible();
+  await expect(registration.getByText(/Preview mode/)).toHaveCount(0);
   await registration
     .getByRole('button', { name: 'Sign Up', exact: true })
     .click();
@@ -186,7 +236,7 @@ test('favorites require a session and remain saved after refresh', async ({
   ).toBeVisible();
   await registration
     .getByLabel('Email', { exact: true })
-    .fill('taylor@example.com');
+    .fill('taylor.new@example.com');
   await registration
     .getByLabel('Password', { exact: true })
     .fill('Example-only-987');
@@ -202,11 +252,24 @@ test('favorites require a session and remain saved after refresh', async ({
   await expect(
     page.getByRole('button', { name: 'Log out', exact: true }),
   ).toBeVisible();
+  await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  const firebase = firebaseFixtures.get(page);
+  expect(firebase.authRequests.map(({ action }) => action)).toContain('signUp');
+  expect(firebase.authRequests.map(({ action }) => action)).toContain('update');
+  const account = firebase.users.get('taylor.new@example.com');
+  await expect
+    .poll(async () =>
+      (await readPersistedAuth(page)).some(
+        (entry) => entry.value?.uid === account.uid,
+      ),
+    )
+    .toBe(true);
   await page.getByRole('button', { name: 'Add John Doe to favorites' }).click();
   await expect(
     page.getByRole('button', { name: 'Remove John Doe from favorites' }),
   ).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
+  await expect(page.locator('.user-name')).toHaveText('Taylor Example');
   await expect(
     page.getByRole('button', { name: 'Remove John Doe from favorites' }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -231,15 +294,154 @@ test('favorites require a session and remain saved after refresh', async ({
     JSON.stringify({ ...localStorage }),
   );
   expect(savedValues).not.toContain('Example-only-987');
+  expect(JSON.stringify(await readPersistedAuth(page))).not.toContain(
+    'Example-only-987',
+  );
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
   ).toBeVisible();
 });
 
+test('Firebase rejects duplicate email and a wrong password before accepting login', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Registration', exact: true }).click();
+  const registration = page.getByRole('dialog', { name: 'Registration' });
+  await registration.getByLabel('Name', { exact: true }).fill('Taylor Example');
+  await registration
+    .getByLabel('Email', { exact: true })
+    .fill(testAccounts.taylor.email);
+  await registration
+    .getByLabel('Password', { exact: true })
+    .fill(testAccounts.taylor.password);
+  await registration
+    .getByRole('button', { name: 'Sign Up', exact: true })
+    .click();
+  await expect(registration.getByRole('alert')).toHaveText(
+    'This email is already registered. Please log in instead.',
+  );
+  await expect(page.getByRole('button', { name: 'Log out' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  const login = page.getByRole('dialog', { name: 'Log In', exact: true });
+  await login.getByRole('button', { name: 'Log In', exact: true }).click();
+  for (const field of ['Email', 'Password']) {
+    await expect(login.getByLabel(field, { exact: true })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  }
+  await login
+    .getByLabel('Email', { exact: true })
+    .fill(testAccounts.taylor.email);
+  await login
+    .getByLabel('Password', { exact: true })
+    .fill('Wrong-password-999');
+  await login.getByRole('button', { name: 'Log In', exact: true }).click();
+  await expect(login.getByRole('alert')).toHaveText(
+    'The email or password is incorrect. Please try again.',
+  );
+  await expect(page.getByRole('button', { name: 'Log out' })).toHaveCount(0);
+  await login
+    .getByLabel('Password', { exact: true })
+    .fill(testAccounts.taylor.password);
+  await login.getByRole('button', { name: 'Log In', exact: true }).click();
+  await expect(login).toHaveCount(0);
+  await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  expect(
+    firebaseFixtures
+      .get(page)
+      .authRequests.filter(({ action }) => action === 'signInWithPassword'),
+  ).toHaveLength(2);
+});
+
+test('favorites are isolated by Firebase UID across sign out and account changes', async ({
+  page,
+}) => {
+  await openTeachers(page);
+  await signIn(page);
+  await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  await page.getByRole('button', { name: 'Add John Doe to favorites' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Remove John Doe from favorites' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('link', { name: 'Favorites', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Log out', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
+  ).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
+  await expect
+    .poll(async () =>
+      (await readPersistedAuth(page)).some((entry) =>
+        Boolean(entry.value?.uid),
+      ),
+    )
+    .toBe(false);
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
+  ).toBeVisible();
+  await signIn(page, testAccounts.robin);
+  await expect(page.locator('.user-name')).toHaveText('Robin Example');
+  await expect(
+    page.getByRole('heading', { name: 'Find a teacher you connect with' }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Teachers', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(4);
+  await expect(
+    page.getByRole('button', { name: 'Add John Doe to favorites' }),
+  ).toHaveAttribute('aria-pressed', 'false');
+  await page
+    .getByRole('button', { name: 'Add Jane Smith to favorites' })
+    .click();
+  await page.getByRole('link', { name: 'Favorites', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(
+    page.getByRole('article').getByRole('heading', { level: 2 }),
+  ).toHaveText('Jane Smith');
+  await page.getByRole('button', { name: 'Log out', exact: true }).click();
+  await signIn(page);
+  await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(
+    page.getByRole('article').getByRole('heading', { level: 2 }),
+  ).toHaveText('John Doe');
+  const favorites = await page.evaluate(() =>
+    Object.fromEntries(
+      Object.entries(localStorage).filter(([key]) =>
+        key.startsWith('learnlingo:favorites:'),
+      ),
+    ),
+  );
+  expect(
+    JSON.parse(favorites[`learnlingo:favorites:${testAccounts.taylor.uid}`]),
+  ).toEqual(['teacher-001']);
+  expect(
+    JSON.parse(favorites[`learnlingo:favorites:${testAccounts.robin.uid}`]),
+  ).toEqual(['teacher-002']);
+});
+
 test('direct access to Favorites offers login without exposing cards', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'learnlingo:preview-user',
+      JSON.stringify({
+        id: 'taylor@example.com',
+        name: 'Legacy preview',
+        email: 'taylor@example.com',
+      }),
+    );
+    localStorage.setItem(
+      'learnlingo:favorites:taylor@example.com',
+      JSON.stringify(['teacher-001']),
+    );
+  });
   await page.goto('/favorites');
   await expect(
     page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
