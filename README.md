@@ -4,9 +4,11 @@
 
 A React application that helps language learners explore teachers and filter them by language, proficiency level, and hourly rate.
 
+[Live site](https://verdant-cajeta-d66ca6.netlify.app/) | [GitHub repository](https://github.com/yasin-kr/learn-lingo)
+
 ## Current status
 
-Firebase Authentication and Realtime Database integration are implemented. Registration, login, logout, and persistent sessions use the Firebase JavaScript SDK; an authentication observer keeps the current user in sync. The application does not store passwords. The local production build has been verified against live Firebase services. Hosted deployment and checks on the deployment domain remain to be completed.
+The application is published on Netlify with Firebase Authentication and Realtime Database integration. Registration, login, logout, and persistent sessions use the Firebase JavaScript SDK; an authentication observer keeps the current user in sync. The application does not store passwords.
 
 Teachers are loaded from Realtime Database through REST queries with key-based pagination. Four cards appear initially, and each `Load more` action makes a new database request. Combined filters are applied in the browser to bounded database batches; additional batches are requested as needed to find matching teachers. Filter options in `src/lib/teacher-options.json` match the supplied teacher dataset.
 
@@ -84,18 +86,18 @@ npm test
 
 All 17 automated browser tests pass. They mock Firebase network responses in isolated browser contexts and do not create real accounts or modify the live database. Lint and production build checks also pass.
 
-Separate checks of the local production build against live Firebase verified registration and profile information, login, logout, session persistence after reload, user-specific favorite addition, persistence and removal, bounded database pagination, and combined filters. These checks do not replace verification on the eventual deployment domain.
+Checks on the published Netlify site against live Firebase verified registration and profile information, login and logout, persistent sessions, user-specific favorites, teacher pagination, and combined filters. Direct page links and reloads, protected Favorites access, form validation and modal dismissal, and mobile and tablet layouts were also checked. No browser console errors were detected, and the temporary test account was deleted after verification.
 
 ## Design and technical scope
 
 The interface is based on the [LearnLingo Figma design](https://www.figma.com/file/dewf5jVviSTuWMMyU3d8Mc/?node-id=0-1). The technical specification covers three pages, registration and session management with Firebase Authentication, a teacher collection in Realtime Database loaded four cards at a time, persistent favorites, teacher filters, and validated modal forms.
 
-## Deployment and next steps
+## Deployment
 
-Configure the hosting environment, deploy the application, and verify the main flows on its deployment domain. No public deployment URL is available yet.
+The live application is available at [verdant-cajeta-d66ca6.netlify.app](https://verdant-cajeta-d66ca6.netlify.app/). Netlify deploys the `main` branch of the [GitHub repository](https://github.com/yasin-kr/learn-lingo).
 
-For Netlify, use `npm run build` as the build command and `dist` as the publish directory. Set the same `VITE_FIREBASE_*` environment variables in the hosting settings before building, and add the deployment hostname to Firebase Authentication's authorized domains. Environment changes require a new build.
+For Netlify, use the repository root as the base directory, `npm run build` as the build command, and `dist` as the publish directory. Set the seven `VITE_FIREBASE_*` environment variables listed above in the hosting settings before building. Environment changes require a new build.
 
-The production build is written to `dist`. The hosting service must route page requests to `index.html` for React Router. A Netlify redirects file is included. After deployment, verify direct page URLs, page reloads, authentication, and teacher loading on the live site.
+The production build is written to `dist`. The included `public/_redirects` file routes page requests to `index.html` for React Router, allowing direct links and reloads on `/teachers` and `/favorites`.
 
 Storing bookings in the database or sending emails is not required by the current technical specification; these are optional additional features.

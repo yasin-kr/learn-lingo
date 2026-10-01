@@ -4,9 +4,11 @@
 
 Dil öğrenmek isteyen kullanıcıların öğretmenleri inceleyebildiği, dil, seviye ve saatlik ücret üzerinden filtreleyebildiği React uygulaması.
 
+[Canlı site](https://verdant-cajeta-d66ca6.netlify.app/) | [GitHub deposu](https://github.com/yasin-kr/learn-lingo)
+
 ## Mevcut durum
 
-Firebase Authentication ve Realtime Database bağlantıları uygulanmıştır. Kayıt, giriş, çıkış ve kalıcı oturumlar Firebase JavaScript SDK ile yönetilir; kimlik doğrulama gözlemcisi mevcut kullanıcı bilgisini güncel tutar. Uygulama şifreleri saklamaz. Yerelde çalıştırılan üretim derlemesi, canlı Firebase hizmetleriyle doğrulanmıştır. Barındırma ortamında yayınlama ve yayın alan adındaki kontroller henüz tamamlanmamıştır.
+Uygulama, Firebase Authentication ve Realtime Database bağlantılarıyla Netlify üzerinde yayımlanmıştır. Kayıt, giriş, çıkış ve kalıcı oturumlar Firebase JavaScript SDK ile yönetilir; kimlik doğrulama gözlemcisi mevcut kullanıcı bilgisini güncel tutar. Uygulama şifreleri saklamaz.
 
 Öğretmenler, kayıt anahtarına dayalı sayfalama yapan REST sorgularıyla Realtime Database'den alınır. İlk yüklemede dört kart gösterilir ve her `Load more` işleminde yeni bir veritabanı isteği yapılır. Birlikte kullanılan filtreler, sınırlı boyuttaki veri gruplarına tarayıcıda uygulanır; eşleşen öğretmenleri bulmak için gerektiğinde ek veri grupları istenir. `src/lib/teacher-options.json` içindeki filtre seçenekleri, sağlanan öğretmen veri kümesiyle eşleşir.
 
@@ -84,18 +86,18 @@ npm test
 
 Otomatik tarayıcı testlerinin 17'si de geçmektedir. Bu testler, yalıtılmış tarayıcı oturumlarında Firebase ağ yanıtlarını taklit eder; gerçek hesap oluşturmaz veya canlı veritabanını değiştirmez. Lint ve üretim derlemesi kontrolleri de başarılıdır.
 
-Yerelde çalıştırılan üretim derlemesiyle canlı Firebase üzerinde ayrıca kayıt ve profil bilgileri, giriş, çıkış, yenileme sonrası oturumun korunması, kullanıcıya özel favori ekleme, saklama ve kaldırma, sınırlı veri gruplarıyla veritabanı sayfalaması ve birleşik filtreler doğrulanmıştır. Bu kontroller, uygulama yayınlandığında yayın alan adında yapılacak doğrulamanın yerini almaz.
+Netlify üzerinde yayımlanan sitede canlı Firebase ile kayıt ve profil bilgileri, giriş ve çıkış, kalıcı oturumlar, kullanıcıya özel favoriler, öğretmen sayfalaması ve birleşik filtreler doğrulanmıştır. Doğrudan sayfa bağlantıları ve yenileme, Favorites erişim koruması, form doğrulaması ve modal kapatma ile mobil ve tablet düzenleri de kontrol edilmiştir. Tarayıcı konsolunda hata görülmemiş, geçici test hesabı doğrulama sonrasında silinmiştir.
 
 ## Tasarım ve teknik kapsam
 
 Arayüz, [LearnLingo Figma tasarımına](https://www.figma.com/file/dewf5jVviSTuWMMyU3d8Mc/?node-id=0-1) dayanır. Teknik kapsam; üç sayfa, Firebase Authentication ile kayıt ve oturum yönetimi, Realtime Database üzerinden öğretmen koleksiyonu ve dörder kart yükleme, kalıcı favoriler, öğretmen filtreleri ve doğrulanan modal formlarını içerir.
 
-## Yayınlama ve sonraki aşama
+## Yayınlama
 
-Barındırma ortamını yapılandırın, uygulamayı yayınlayın ve temel akışları yayın alan adında doğrulayın. Henüz herkese açık bir yayın adresi yoktur.
+Canlı uygulama [verdant-cajeta-d66ca6.netlify.app](https://verdant-cajeta-d66ca6.netlify.app/) adresindedir. Netlify, [GitHub deposunun](https://github.com/yasin-kr/learn-lingo) `main` dalını yayımlar.
 
-Netlify için derleme komutu olarak `npm run build`, yayın dizini olarak `dist` kullanın. Derlemeden önce aynı `VITE_FIREBASE_*` ortam değişkenlerini barındırma ayarlarında tanımlayın ve yayın alan adını Firebase Authentication'ın yetkili alan adlarına ekleyin. Ortam değişiklikleri yeni bir derleme gerektirir.
+Netlify için temel dizin olarak depo kökünü, derleme komutu olarak `npm run build`, yayın dizini olarak `dist` kullanın. Derlemeden önce yukarıdaki yedi `VITE_FIREBASE_*` ortam değişkenini barındırma ayarlarında tanımlayın. Ortam değişiklikleri yeni bir derleme gerektirir.
 
-Üretim çıktısı `dist` dizinine yazılır. React Router için barındırma servisinin sayfa isteklerini `index.html` dosyasına yönlendirmesi gerekir. Netlify için yönlendirme dosyası projede bulunmaktadır. Yayınlandıktan sonra doğrudan sayfa adreslerini, sayfa yenilemeyi, kimlik doğrulamayı ve öğretmen yüklemeyi canlı sitede kontrol edin.
+Üretim çıktısı `dist` dizinine yazılır. Projedeki `public/_redirects` dosyası, React Router için sayfa isteklerini `index.html` dosyasına yönlendirir; böylece `/teachers` ve `/favorites` adresleri doğrudan açılabilir ve yenilenebilir.
 
 Rezervasyonları veritabanına kaydetmek veya e-posta göndermek mevcut teknik şartnamede zorunlu değildir; bunlar isteğe bağlı ek özelliklerdir.
