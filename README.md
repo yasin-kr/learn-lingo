@@ -17,6 +17,7 @@ The trial lesson form displays a local summary of the completed request. It does
 ## Features
 
 - Home, Teachers, and Favorites pages; Favorites requires a Firebase session.
+- Password recovery from the login form with a validated email field and Firebase password reset emails.
 - Filters for language, learner proficiency level, and maximum hourly rate.
 - Expandable teacher cards with experience details and student reviews.
 - Favorites saved in `localStorage` under each Firebase user's UID. They persist in the same browser and do not sync across devices.
@@ -66,6 +67,8 @@ Open the local address shown in the terminal. Restart the development server aft
 
 Teacher data is maintained through administrative access, such as the Firebase Console. A `users` database collection is not required: Authentication manages accounts, and favorites remain in browser storage, separated by Firebase UID.
 
+To reset a password, open `Log in`, select `Forgot password?`, and submit the account's email address. The form shows a generic acknowledgment without revealing whether an account exists. Firebase sends the reset email for an eligible account, and its default hosted reset page handles choosing a new password. This uses the existing Email/Password provider and requires no additional environment variables.
+
 Use only the Firebase web application configuration in the frontend. Never put a service account private key or other server credentials in `VITE_` variables or project files.
 
 ## Checks
@@ -84,7 +87,7 @@ npx playwright install chromium
 npm test
 ```
 
-All 17 automated browser tests pass. They mock Firebase network responses in isolated browser contexts and do not create real accounts or modify the live database. Lint and production build checks also pass.
+Automated browser tests cover authentication, password recovery, favorites, teacher browsing, forms, and responsive layouts. They mock Firebase network responses in isolated browser contexts and do not create real accounts, send emails, or modify the live database. Password reset email delivery is not covered by these mocked tests.
 
 Checks on the published Netlify site against live Firebase verified registration and profile information, login and logout, persistent sessions, user-specific favorites, teacher pagination, and combined filters. Direct page links and reloads, protected Favorites access, form validation and modal dismissal, and mobile and tablet layouts were also checked. No browser console errors were detected, and the temporary test account was deleted after verification.
 
@@ -100,4 +103,4 @@ For Netlify, use the repository root as the base directory, `npm run build` as t
 
 The production build is written to `dist`. The included `public/_redirects` file routes page requests to `index.html` for React Router, allowing direct links and reloads on `/teachers` and `/favorites`.
 
-Storing bookings in the database or sending emails is not required by the current technical specification; these are optional additional features.
+Storing bookings in the database or sending booking confirmation emails is not required by the current technical specification; these are optional additional features.

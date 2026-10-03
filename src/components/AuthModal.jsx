@@ -19,6 +19,7 @@ const sharedFields = {
 };
 
 const loginSchema = yup.object(sharedFields);
+const resetSchema = yup.object({ email: sharedFields.email });
 const registrationSchema = yup.object({
   name: yup
     .string()
@@ -28,14 +29,14 @@ const registrationSchema = yup.object({
   ...sharedFields,
 });
 
-export default function AuthModal({ mode = 'login', onClose }) {
+function AccountAuthModal({ mode = 'login', onClose }) {
   const isRegistration = mode === 'register' || mode === 'registration';
   const titleId = useId();
   const formId = useId();
   const activeRef = useRef(true);
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const { signIn, signUp, authLoading, authError } = useApp();
+  const { signIn, signUp, openAuth, authLoading, authError } = useApp();
   const {
     register,
     handleSubmit,
@@ -163,6 +164,16 @@ export default function AuthModal({ mode = 'login', onClose }) {
             )}
           </div>
         </div>
+        {!isRegistration && (
+          <button
+            type="button"
+            className="auth-text-button forgot-password"
+            onClick={() => openAuth('reset')}
+            disabled={isSubmitting}
+          >
+            Forgot password?
+          </button>
+        )}
         {(submitError || authError) && (
           <p className="form-error" role="alert">
             {submitError || authError}
@@ -181,5 +192,141 @@ export default function AuthModal({ mode = 'login', onClose }) {
         </button>
       </form>
     </Modal>
+  );
+}
+
+function PasswordResetModal({ onClose }) {
+  const titleId = useId();
+  const formId = useId();
+  const activeRef = useRef(true);
+  const submittingRef = useRef(false);
+  const successHeadingRef = useRef(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const { resetPassword, openAuth, authLoading, authError } = useApp();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: yupResolver(resetSchema),
+    defaultValues: { email: '' },
+    mode: 'onTouched',
+  });
+  const isPending = isSubmitting || isSending;
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (submitted) successHeadingRef.current?.focus();
+  }, [submitted]);
+
+  const onSubmit = async (values) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSending(true);
+    setSubmitError('');
+    try {
+      await resetPassword(values);
+      if (activeRef.current) setSubmitted(true);
+    } catch (error) {
+      if (activeRef.current) {
+        setSubmitError(
+          error?.message || 'We could not continue. Please try again.',
+        );
+      }
+    } finally {
+      submittingRef.current = false;
+      if (activeRef.current) setIsSending(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose} labelledBy={titleId} className="auth-modal">
+      <h2
+        id={titleId}
+        ref={successHeadingRef}
+        className="modal-title"
+        tabIndex={submitted ? -1 : undefined}
+      >
+        {submitted ? 'Check your email' : 'Reset password'}
+      </h2>
+      {submitted ? (
+        <p className="modal-description" role="status">
+          If an account exists for this email address, you will receive a
+          password reset link.
+        </p>
+      ) : (
+        <>
+          <p className="modal-description">
+            Enter your account email address to request a password reset link.
+          </p>
+          <form
+            className="modal-form auth-form"
+            onSubmit={(event) => handleSubmit(onSubmit)(event)}
+            aria-busy={isPending}
+            noValidate
+          >
+            <div className="form-field">
+              <label className="sr-only" htmlFor={`${formId}-email`}>
+                Email
+              </label>
+              <input
+                id={`${formId}-email`}
+                type="email"
+                placeholder="Email"
+                autoComplete="email"
+                aria-required="true"
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={
+                  errors.email ? `${formId}-email-error` : undefined
+                }
+                readOnly={isPending}
+                {...register('email')}
+              />
+              {errors.email && (
+                <p id={`${formId}-email-error`} className="field-error">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+            {(submitError || authError) && (
+              <p className="form-error" role="alert">
+                {submitError || authError}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="button button-primary modal-submit"
+              disabled={isPending || authLoading || Boolean(authError)}
+            >
+              {isPending ? 'Sending…' : 'Send reset link'}
+            </button>
+          </form>
+        </>
+      )}
+      <button
+        type="button"
+        className="auth-text-button auth-back-button"
+        onClick={() => openAuth('login')}
+        disabled={isPending}
+      >
+        Back to log in
+      </button>
+    </Modal>
+  );
+}
+
+export default function AuthModal(props) {
+  return props.mode === 'reset' ? (
+    <PasswordResetModal onClose={props.onClose} />
+  ) : (
+    <AccountAuthModal {...props} />
   );
 }

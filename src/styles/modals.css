@@ -66,6 +66,45 @@
   margin-top: 40px;
 }
 
+.auth-text-button {
+  padding: 4px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.auth-text-button:hover {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+.auth-text-button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.auth-text-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.forgot-password {
+  display: block;
+  margin: 12px 0 0 auto;
+}
+
+.auth-back-button {
+  display: block;
+  margin: 24px auto 0;
+}
+
 .form-fields {
   display: flex;
   flex-direction: column;

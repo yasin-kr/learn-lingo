@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
@@ -150,6 +151,15 @@ export default function AppProvider({ children, theme }) {
     }
   };
 
+  const resetPassword = async ({ email }) => {
+    try {
+      await sendPasswordResetEmail(requireAuthentication(), email.trim());
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') return;
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
   const toggleFavorite = (teacher) => {
     if (authLoading || signingOut) {
       notify('Your session is still loading. Please try again shortly.');
@@ -190,6 +200,7 @@ export default function AppProvider({ children, theme }) {
         signIn,
         signUp,
         signOut,
+        resetPassword,
         toggleFavorite,
       }}
     >

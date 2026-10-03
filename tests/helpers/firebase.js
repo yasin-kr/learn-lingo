@@ -79,6 +79,8 @@ export async function mockFirebase(page) {
   const expectedFailures = new Set();
   const unexpectedRequests = [];
   let databaseFailures = 0;
+  const passwordResetFailures = [];
+  let passwordResetGate = null;
 
   const respond = (route, body, status = 200) => {
     if (status >= 400) expectedFailures.add(route.request().url());
@@ -101,6 +103,28 @@ export async function mockFirebase(page) {
       const action = url.pathname.split(':').pop();
       const body = request.postDataJSON() || {};
       authRequests.push({ action, body });
+
+      if (action === 'sendOobCode') {
+        if (body.requestType !== 'PASSWORD_RESET') {
+          unexpectedRequests.push(
+            `Unexpected email action: ${body.requestType}`,
+          );
+          return rejectAuth(route, 'INVALID_REQ_TYPE');
+        }
+        const gate = passwordResetGate;
+        passwordResetGate = null;
+        if (gate) await gate;
+        const failure = passwordResetFailures.shift();
+        if (failure === 'NETWORK_FAILURE') {
+          expectedFailures.add(request.url());
+          return route.abort('failed');
+        }
+        if (failure) return rejectAuth(route, failure);
+        if (!users.has(body.email.trim().toLowerCase())) {
+          return rejectAuth(route, 'EMAIL_NOT_FOUND');
+        }
+        return respond(route, { email: body.email });
+      }
 
       if (action === 'signUp') {
         const email = body.email.trim().toLowerCase();
@@ -231,6 +255,16 @@ export async function mockFirebase(page) {
     unexpectedRequests,
     failNextDatabaseRequest() {
       databaseFailures += 1;
+    },
+    failNextPasswordResetRequest(message) {
+      passwordResetFailures.push(message);
+    },
+    holdNextPasswordResetRequest() {
+      let release;
+      passwordResetGate = new Promise((resolve) => {
+        release = resolve;
+      });
+      return release;
     },
   };
 }

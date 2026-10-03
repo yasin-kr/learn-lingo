@@ -17,6 +17,7 @@ Deneme dersi formu, doldurulan talebin yerel bir özetini gösterir. Rezervasyon
 ## Özellikler
 
 - Home, Teachers ve Firebase oturumu gerektiren Favorites sayfaları.
+- Giriş formundan erişilen, e-posta alanı doğrulanan ve Firebase şifre sıfırlama e-postalarını kullanan şifre kurtarma akışı.
 - Dil, öğrenci seviyesi ve en yüksek saatlik ücret filtreleri.
 - Genişletilebilir öğretmen kartları, deneyim açıklamaları ve öğrenci yorumları.
 - Firebase kullanıcısının UID bilgisine göre `localStorage` içinde saklanan favoriler. Aynı tarayıcıda korunur; cihazlar arasında eşitlenmez.
@@ -66,6 +67,8 @@ Terminalde gösterilen yerel adresi tarayıcıda açın. Ortam değişkenlerini 
 
 Öğretmen verileri Firebase Console gibi yönetici erişimiyle düzenlenir. Veritabanında `users` koleksiyonu gerekmez: hesapları Authentication yönetir; favoriler Firebase UID bilgisine göre ayrılmış olarak tarayıcıda saklanır.
 
+Şifreyi sıfırlamak için `Log in` formunu açın, `Forgot password?` bağlantısını seçin ve hesabın e-posta adresini gönderin. Form, hesabın var olup olmadığını açıklamayan genel bir bilgilendirme gösterir. Uygun bir hesap için sıfırlama e-postasını Firebase gönderir; yeni şifre Firebase'in varsayılan sıfırlama sayfasında belirlenir. Mevcut Email/Password sağlayıcısı kullanılır, ek ortam değişkeni gerekmez.
+
 Frontend içinde yalnızca Firebase web uygulaması yapılandırmasını kullanın. Servis hesabı özel anahtarını veya diğer sunucu kimlik bilgilerini `VITE_` değişkenlerine ya da proje dosyalarına koymayın.
 
 ## Kontroller
@@ -84,7 +87,7 @@ npx playwright install chromium
 npm test
 ```
 
-Otomatik tarayıcı testlerinin 17'si de geçmektedir. Bu testler, yalıtılmış tarayıcı oturumlarında Firebase ağ yanıtlarını taklit eder; gerçek hesap oluşturmaz veya canlı veritabanını değiştirmez. Lint ve üretim derlemesi kontrolleri de başarılıdır.
+Otomatik tarayıcı testleri kimlik doğrulama, şifre kurtarma, favoriler, öğretmen listeleme, formlar ve farklı ekran düzenlerini kapsar. Bu testler, yalıtılmış tarayıcı oturumlarında Firebase ağ yanıtlarını taklit eder; gerçek hesap oluşturmaz, e-posta göndermez veya canlı veritabanını değiştirmez. Şifre sıfırlama e-postasının teslimi, taklit yanıtlarla çalışan bu testlerin kapsamında değildir.
 
 Netlify üzerinde yayımlanan sitede canlı Firebase ile kayıt ve profil bilgileri, giriş ve çıkış, kalıcı oturumlar, kullanıcıya özel favoriler, öğretmen sayfalaması ve birleşik filtreler doğrulanmıştır. Doğrudan sayfa bağlantıları ve yenileme, Favorites erişim koruması, form doğrulaması ve modal kapatma ile mobil ve tablet düzenleri de kontrol edilmiştir. Tarayıcı konsolunda hata görülmemiş, geçici test hesabı doğrulama sonrasında silinmiştir.
 
@@ -100,4 +103,4 @@ Netlify için temel dizin olarak depo kökünü, derleme komutu olarak `npm run 
 
 Üretim çıktısı `dist` dizinine yazılır. Projedeki `public/_redirects` dosyası, React Router için sayfa isteklerini `index.html` dosyasına yönlendirir; böylece `/teachers` ve `/favorites` adresleri doğrudan açılabilir ve yenilenebilir.
 
-Rezervasyonları veritabanına kaydetmek veya e-posta göndermek mevcut teknik şartnamede zorunlu değildir; bunlar isteğe bağlı ek özelliklerdir.
+Rezervasyonları veritabanına kaydetmek veya rezervasyon onay e-postaları göndermek mevcut teknik şartnamede zorunlu değildir; bunlar isteğe bağlı ek özelliklerdir.
