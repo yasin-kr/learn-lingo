@@ -5,6 +5,8 @@ export default function TeacherFilters({
   options,
   onChange,
   onReset,
+  onCopyLink,
+  copyingLink = false,
 }) {
   const hasFilters = Boolean(
     filters.language || filters.level || filters.maxPrice,
@@ -74,14 +76,27 @@ export default function TeacherFilters({
       </label>
 
       {hasFilters && (
-        <button
-          className="teacher-filter-reset"
-          type="button"
-          onClick={onReset}
-        >
-          Reset filters
-          <Icon name="x" size={16} />
-        </button>
+        <div className="teacher-filter-actions">
+          {onCopyLink && (
+            <button
+              className="teacher-filter-copy"
+              type="button"
+              onClick={onCopyLink}
+              disabled={copyingLink}
+              aria-busy={copyingLink}
+            >
+              {copyingLink ? 'Copying…' : 'Copy filter link'}
+            </button>
+          )}
+          <button
+            className="teacher-filter-reset"
+            type="button"
+            onClick={onReset}
+          >
+            Reset filters
+            <Icon name="x" size={16} />
+          </button>
+        </div>
       )}
     </form>
   );

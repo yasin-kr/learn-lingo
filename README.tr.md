@@ -19,6 +19,7 @@ Deneme dersi formu, doldurulan talebin yerel bir özetini gösterir. Rezervasyon
 - Home, Teachers ve Firebase oturumu gerektiren Favorites sayfaları.
 - Giriş formundan erişilen, e-posta alanı doğrulanan ve Firebase şifre sıfırlama e-postalarını kullanan şifre kurtarma akışı.
 - Dil, öğrenci seviyesi ve en yüksek saatlik ücret filtreleri.
+- Öğretmen filtreleri URL'de tutulur ve sayfa yenilendiğinde korunur. `Copy filter link` ile seçili filtreler paylaşılır; kopyalanan bağlantıya ilgisiz URL parametreleri eklenmez. Geçersiz filtre değerleri temizlenir ve filtreler sıfırlanırken diğer URL parametreleri korunur.
 - Genişletilebilir öğretmen kartları, deneyim açıklamaları ve öğrenci yorumları.
 - Firebase kullanıcısının UID bilgisine göre `localStorage` içinde saklanan favoriler. Aynı tarayıcıda korunur; cihazlar arasında eşitlenmez.
 - Zorunlu alan doğrulaması, şifre gösterme kontrolü ve deneme dersi formu.

@@ -1,31 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import Icon from '../components/Icon';
 import TeacherCard from '../components/TeacherCard';
 import TeacherFilters from '../components/TeacherFilters';
 import { useApp } from '../context/AppContext';
+import options from '../lib/teacher-options.json';
+import { normalizeTeacherFilters } from '../lib/teacher-filters';
 import { getTeachers } from '../services/teachers';
 import '../styles/teachers.css';
 
-const emptyOptions = { languages: [], levels: [], prices: [] };
-
 export default function TeachersPage({ favoritesOnly = false }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { favoriteIds } = useApp();
+  const [searchParams] = useSearchParams();
+  const { hash } = useLocation();
+  const navigate = useNavigate();
+  const { favoriteIds, notify } = useApp();
   const [teachers, setTeachers] = useState([]);
-  const [options, setOptions] = useState(emptyOptions);
+  const [copyingLink, setCopyingLink] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [resolvedQuery, setResolvedQuery] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [nextCursor, setNextCursor] = useState(null);
   const requestRef = useRef(null);
-  const language = searchParams.get('language') || '';
-  const level = searchParams.get('level') || '';
-  const maxPrice = searchParams.get('maxPrice') || '';
+  const normalizedParams = normalizeTeacherFilters(searchParams);
+  const normalizedSearch = normalizedParams.toString();
+  const language = normalizedParams.get('language') || '';
+  const level = normalizedParams.get('level') || '';
+  const maxPrice = normalizedParams.get('maxPrice') || '';
   const favoriteKey = favoritesOnly ? JSON.stringify(favoriteIds) : '';
   const queryKey = JSON.stringify([language, level, maxPrice, favoriteKey]);
   const loading = resolvedQuery !== queryKey;
+
+  useEffect(() => {
+    if (normalizedSearch !== searchParams.toString()) {
+      navigate({ search: normalizedSearch, hash }, { replace: true });
+    }
+  }, [normalizedSearch, searchParams, navigate, hash]);
 
   const loadTeachers = useCallback(
     (cursor = null) => {
@@ -49,7 +64,6 @@ export default function TeachersPage({ favoritesOnly = false }) {
               ? result.teachers
               : [...previous, ...result.teachers],
           );
-          setOptions(result.options);
           setHasMore(result.hasMore);
           setNextCursor(result.nextCursor);
           setError('');
@@ -82,18 +96,35 @@ export default function TeachersPage({ favoritesOnly = false }) {
   }, [loadTeachers]);
 
   const updateFilter = (key, value) => {
-    setSearchParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        if (value) next.set(key, value);
-        else next.delete(key);
-        return next;
-      },
-      { replace: true },
-    );
+    const next = new URLSearchParams(normalizedParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    navigate({ search: next.toString(), hash }, { replace: true });
   };
 
-  const resetFilters = () => setSearchParams({}, { replace: true });
+  const resetFilters = () => {
+    const next = new URLSearchParams(normalizedParams);
+    for (const key of ['language', 'level', 'maxPrice']) next.delete(key);
+    navigate({ search: next.toString(), hash }, { replace: true });
+  };
+  const copyFilterLink = async () => {
+    if (copyingLink) return;
+    const url = new URL('/teachers', window.location.origin);
+    for (const [key, value] of Object.entries({ language, level, maxPrice })) {
+      if (value) url.searchParams.set(key, value);
+    }
+    setCopyingLink(true);
+    try {
+      await navigator.clipboard.writeText(url.href);
+      notify('Filter link copied. Share it to show the same teacher filters.');
+    } catch {
+      notify(
+        'We could not copy the link. Copy the address from your browser instead.',
+      );
+    } finally {
+      setCopyingLink(false);
+    }
+  };
   const retryTeachers = () => {
     setResolvedQuery(null);
     loadTeachers();
@@ -123,6 +154,8 @@ export default function TeachersPage({ favoritesOnly = false }) {
           options={options}
           onChange={updateFilter}
           onReset={resetFilters}
+          onCopyLink={favoritesOnly ? undefined : copyFilterLink}
+          copyingLink={copyingLink}
         />
 
         <div className="sr-only" role="status" aria-live="polite">

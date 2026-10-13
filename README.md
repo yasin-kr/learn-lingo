@@ -19,6 +19,7 @@ The trial lesson form displays a local summary of the completed request. It does
 - Home, Teachers, and Favorites pages; Favorites requires a Firebase session.
 - Password recovery from the login form with a validated email field and Firebase password reset emails.
 - Filters for language, learner proficiency level, and maximum hourly rate.
+- Teacher filters stay in the URL across reloads. Use `Copy filter link` to share the selected filters; copied links exclude unrelated URL parameters. Invalid filter values are cleared, and resetting filters preserves other URL parameters.
 - Expandable teacher cards with experience details and student reviews.
 - Favorites saved in `localStorage` under each Firebase user's UID. They persist in the same browser and do not sync across devices.
 - Required field validation, password visibility controls, and a trial lesson form.
