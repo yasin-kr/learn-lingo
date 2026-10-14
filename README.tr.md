@@ -22,6 +22,7 @@ Deneme dersi formu, doldurulan talebin yerel bir özetini gösterir. Rezervasyon
 - Öğretmen filtreleri URL'de tutulur ve sayfa yenilendiğinde korunur. `Copy filter link` ile seçili filtreler paylaşılır; kopyalanan bağlantıya ilgisiz URL parametreleri eklenmez. Geçersiz filtre değerleri temizlenir ve filtreler sıfırlanırken diğer URL parametreleri korunur.
 - Genişletilebilir öğretmen kartları, deneyim açıklamaları ve öğrenci yorumları.
 - Firebase kullanıcısının UID bilgisine göre `localStorage` içinde saklanan favoriler. Aynı tarayıcıda korunur; cihazlar arasında eşitlenmez.
+- Favorites menüsündeki sayaç, giriş yapan kullanıcının kayıtlı öğretmen sayısını gösterir; ekleme ve çıkarma işlemlerinde güncellenir, ekran okuyuculara sayı değişimini bildirir.
 - Zorunlu alan doğrulaması, şifre gösterme kontrolü ve deneme dersi formu.
 - Çarpı, arka plan tıklaması ve Escape ile kapanan, klavye odağını yöneten modallar.
 - Mobil, tablet ve masaüstüne uyarlanan arayüz.

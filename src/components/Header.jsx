@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Icon from './Icon';
 
 export default function Header() {
-  const { user, authLoading, signingOut, theme, openAuth, signOut } = useApp();
+  const {
+    user,
+    authLoading,
+    signingOut,
+    theme,
+    favoriteIds,
+    openAuth,
+    signOut,
+  } = useApp();
+  const favoriteCountId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const closeMenu = () => setMenuOpen(false);
@@ -73,9 +82,23 @@ export default function Header() {
               Teachers
             </NavLink>
             {user && (
-              <NavLink to="/favorites" onClick={closeMenu}>
-                Favorites
-              </NavLink>
+              <>
+                <NavLink
+                  to="/favorites"
+                  className="favorites-nav-link"
+                  onClick={closeMenu}
+                  aria-describedby={favoriteCountId}
+                >
+                  Favorites
+                  <span className="favorites-count" aria-hidden="true">
+                    {favoriteIds.length}
+                  </span>
+                </NavLink>
+                <span id={favoriteCountId} className="sr-only" role="status">
+                  {favoriteIds.length} saved{' '}
+                  {favoriteIds.length === 1 ? 'teacher' : 'teachers'}
+                </span>
+              </>
             )}
           </nav>
           <div className="header-actions" aria-busy={authLoading}>

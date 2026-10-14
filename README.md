@@ -22,6 +22,7 @@ The trial lesson form displays a local summary of the completed request. It does
 - Teacher filters stay in the URL across reloads. Use `Copy filter link` to share the selected filters; copied links exclude unrelated URL parameters. Invalid filter values are cleared, and resetting filters preserves other URL parameters.
 - Expandable teacher cards with experience details and student reviews.
 - Favorites saved in `localStorage` under each Firebase user's UID. They persist in the same browser and do not sync across devices.
+- The Favorites navigation badge shows the signed-in user's saved teacher count and updates as teachers are added or removed, with an accessible count announcement.
 - Required field validation, password visibility controls, and a trial lesson form.
 - Modals with keyboard focus management that close using the close button, backdrop, or Escape key.
 - Responsive layouts for mobile, tablet, and desktop screens.

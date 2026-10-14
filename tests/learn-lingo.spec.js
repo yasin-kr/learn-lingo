@@ -65,6 +65,19 @@ async function expectNoHorizontalOverflow(page) {
   expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport);
 }
 
+async function expectFavoriteCount(page, count) {
+  const favoritesLink = page.getByRole('link', {
+    name: 'Favorites',
+    exact: true,
+  });
+  await expect(favoritesLink.locator('.favorites-count')).toHaveText(
+    String(count),
+  );
+  await expect(favoritesLink).toHaveAccessibleDescription(
+    `${count} saved ${count === 1 ? 'teacher' : 'teachers'}`,
+  );
+}
+
 async function capture(page, testInfo, name) {
   await page.evaluate(() => document.fonts.ready);
   await page.locator('img').evaluateAll((images) => {
@@ -206,6 +219,7 @@ test('favorites require a session and remain saved after refresh', async ({
   page,
 }) => {
   await openTeachers(page);
+  await expect(page.locator('.favorites-count')).toHaveCount(0);
   await page.getByRole('button', { name: 'Add John Doe to favorites' }).click();
   const accessDialog = page.getByRole('dialog', {
     name: 'Keep your favorites close',
@@ -253,6 +267,7 @@ test('favorites require a session and remain saved after refresh', async ({
     page.getByRole('button', { name: 'Log out', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  await expectFavoriteCount(page, 0);
   const firebase = firebaseFixtures.get(page);
   expect(firebase.authRequests.map(({ action }) => action)).toContain('signUp');
   expect(firebase.authRequests.map(({ action }) => action)).toContain('update');
@@ -268,11 +283,13 @@ test('favorites require a session and remain saved after refresh', async ({
   await expect(
     page.getByRole('button', { name: 'Remove John Doe from favorites' }),
   ).toHaveAttribute('aria-pressed', 'true');
+  await expectFavoriteCount(page, 1);
   await page.reload();
   await expect(page.locator('.user-name')).toHaveText('Taylor Example');
   await expect(
     page.getByRole('button', { name: 'Remove John Doe from favorites' }),
   ).toHaveAttribute('aria-pressed', 'true');
+  await expectFavoriteCount(page, 1);
   await page.getByRole('link', { name: 'Favorites', exact: true }).click();
   await expect(page).toHaveURL('/favorites');
   await expect(page.getByRole('article')).toHaveCount(1);
@@ -283,10 +300,12 @@ test('favorites require a session and remain saved after refresh', async ({
     .getByRole('button', { name: 'Remove John Doe from favorites' })
     .click();
   await expect(page.getByRole('article')).toHaveCount(0);
+  await expectFavoriteCount(page, 0);
   await expect(
     page.getByRole('heading', { name: 'Find a teacher you connect with' }),
   ).toBeVisible();
   await page.reload();
+  await expectFavoriteCount(page, 0);
   await expect(
     page.getByRole('heading', { name: 'Find a teacher you connect with' }),
   ).toBeVisible();
@@ -298,6 +317,7 @@ test('favorites require a session and remain saved after refresh', async ({
     'Example-only-987',
   );
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
+  await expect(page.locator('.favorites-count')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
   ).toBeVisible();
@@ -363,13 +383,16 @@ test('favorites are isolated by Firebase UID across sign out and account changes
   await openTeachers(page);
   await signIn(page);
   await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  await expectFavoriteCount(page, 0);
   await page.getByRole('button', { name: 'Add John Doe to favorites' }).click();
   await expect(
     page.getByRole('button', { name: 'Remove John Doe from favorites' }),
   ).toHaveAttribute('aria-pressed', 'true');
+  await expectFavoriteCount(page, 1);
   await page.getByRole('link', { name: 'Favorites', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(1);
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
+  await expect(page.locator('.favorites-count')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: 'Your favorite tutors, all together' }),
   ).toBeVisible();
@@ -387,6 +410,7 @@ test('favorites are isolated by Firebase UID across sign out and account changes
   ).toBeVisible();
   await signIn(page, testAccounts.robin);
   await expect(page.locator('.user-name')).toHaveText('Robin Example');
+  await expectFavoriteCount(page, 0);
   await expect(
     page.getByRole('heading', { name: 'Find a teacher you connect with' }),
   ).toBeVisible();
@@ -398,14 +422,17 @@ test('favorites are isolated by Firebase UID across sign out and account changes
   await page
     .getByRole('button', { name: 'Add Jane Smith to favorites' })
     .click();
+  await expectFavoriteCount(page, 1);
   await page.getByRole('link', { name: 'Favorites', exact: true }).click();
   await expect(page.getByRole('article')).toHaveCount(1);
   await expect(
     page.getByRole('article').getByRole('heading', { level: 2 }),
   ).toHaveText('Jane Smith');
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
+  await expect(page.locator('.favorites-count')).toHaveCount(0);
   await signIn(page);
   await expect(page.locator('.user-name')).toHaveText('Taylor Example');
+  await expectFavoriteCount(page, 1);
   await expect(page.getByRole('article')).toHaveCount(1);
   await expect(
     page.getByRole('article').getByRole('heading', { level: 2 }),
@@ -423,6 +450,50 @@ test('favorites are isolated by Firebase UID across sign out and account changes
   expect(
     JSON.parse(favorites[`learnlingo:favorites:${testAccounts.robin.uid}`]),
   ).toEqual(['teacher-002']);
+});
+
+test('saved teacher count remains accessible in mobile and desktop navigation', async ({
+  page,
+}, testInfo) => {
+  await openTeachers(page);
+  await signIn(page);
+  for (const name of ['John Doe', 'Jane Smith']) {
+    await page
+      .getByRole('button', { name: `Add ${name} to favorites` })
+      .click();
+  }
+  await expectFavoriteCount(page, 2);
+
+  for (const width of [375, 700, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await openTeachers(page);
+    if (width < 700) {
+      await page.getByRole('button', { name: 'Open navigation' }).click();
+    }
+    const favoritesLink = page.getByRole('link', {
+      name: 'Favorites',
+      exact: true,
+    });
+    await expect(favoritesLink).toBeVisible();
+    await expectFavoriteCount(page, 2);
+    await expect(favoritesLink.locator('.favorites-count')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({
+      path: testInfo.outputPath(`favorites-navigation-${width}.png`),
+      fullPage: false,
+      animations: 'disabled',
+    });
+    await favoritesLink.click();
+    await expect(page).toHaveURL('/favorites');
+    await expect(page.getByRole('article')).toHaveCount(2);
+    await expectNoHorizontalOverflow(page);
+    if (width < 700) {
+      await expect(
+        page.getByRole('button', { name: 'Open navigation' }),
+      ).toHaveAttribute('aria-expanded', 'false');
+    }
+  }
 });
 
 test('direct access to Favorites offers login without exposing cards', async ({
